@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Multi-View Booster (12 Player)</title>
+    <title>YouTube Multi-View Booster (Auto-Fix)</title>
     <style>
         :root {
             --primary: #ff0000;
@@ -68,11 +68,11 @@
         button.secondary { background-color: #444; }
         button.secondary:hover { background-color: #555; }
 
-        /* Grid Layout untuk 10 Player */
+        /* Grid Layout 25 Player */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
             margin-bottom: 20px;
         }
 
@@ -82,12 +82,25 @@
             overflow: hidden;
             border: 1px solid #333;
             position: relative;
+            /* Tampilkan text loading di belakang iframe */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading-text {
+            position: absolute;
+            color: #555;
+            font-size: 0.8rem;
+            z-index: 0;
         }
 
         .video-wrapper {
             position: relative;
             padding-bottom: 56.25%; /* 16:9 ratio */
             height: 0;
+            width: 100%;
+            z-index: 1; /* Di atas loading text */
         }
         .video-wrapper iframe {
             position: absolute;
@@ -96,6 +109,7 @@
             width: 100%;
             height: 100%;
         }
+        
         .player-label {
             position: absolute;
             top: 5px;
@@ -119,22 +133,23 @@
             border: 1px solid #333;
         }
         .log-item { border-bottom: 1px solid #333; padding: 3px 0; color: #aaa; }
+        .error-msg { color: #ff4444; }
         .highlight { color: #4caf50; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚀 YouTube Multi-View Booster (12 Player)</h2>
+    <h2>🚀 YouTube Multi-View Booster (Auto-Fix)</h2>
     
     <div class="controls">
         <p style="margin: 0 0 10px 0; color: #ccc; font-size: 0.9rem;">
-            Masukkan ID Video. Semua 12 player akan memutar daftar ini secara looping.
-            <br><small style="color: #e6b800;">⚠ Audio dimatikan otomatis agar browser mengizinkan 12 video diputar sekaligus.</small>
+            Masukkan ID Video (Wajib 11 Karakter). Contoh: <code>dQw4w9WgXcQ</code>
+            <br><small style="color: #e6b800;">⚠ Audio otomatis dimatikan (Mute) agar video bisa jalan otomatis.</small>
         </p>
         <div class="input-group">
-            <input type="text" id="videoIds" placeholder="Contoh: dQw4w9WgXcQ, anotherID..." value="jfKfPfyJRdk, 5qap5aO4i9A">
-            <button onclick="startAllPlayers()">▶ Mulai Semua (12x)</button>
+            <input type="text" id="videoIds" placeholder="Contoh: dQw4w9WgXcQ" value="jfKfPfyJRdk">
+            <button onclick="startAllPlayers()">▶ Mulai (25 Player)</button>
             <button class="secondary" onclick="stopAll()">⏹ Stop</button>
         </div>
     </div>
@@ -145,37 +160,35 @@
 
     <div class="status-panel">
         <strong>Log Aktivitas:</strong>
-        <div id="statusLog">Siap...</div>
+        <div id="statusLog">Menunggu API YouTube...</div>
     </div>
 </div>
 
 <script>
+    // Memastikan fungsi global tersedia sebelum script dimuat
+    window.onYouTubeIframeAPIReady = function() {
+        generateHTMLGrid();
+        logStatus("API Siap. Silakan masukkan ID dan klik Mulai.");
+    };
+
+    // Load API
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-    var players = []; // Array untuk menyimpan 12 object player
+    var players = [];
     var videoList = [];
-    var playerCount = 12;
-    
-    // Menyimpan index video saat ini untuk masing-masing player
-    // Agar jika kita punya banyak video, playernya bisa acak (opsional) atau urut.
-    // Disini kita buat urut tapi independen.
+    var playerCount = 25; 
     var playerVideoIndexes = new Array(playerCount).fill(0);
 
-    function onYouTubeIframeAPIReady() {
-        generateHTMLGrid();
-        logStatus("API Siap. Klik 'Mulai Semua' untuk menjalankan 10 player.");
-    }
-
-    // Generate 10 Divs secara otomatis
     function generateHTMLGrid() {
         const container = document.getElementById('gridContainer');
         container.innerHTML = '';
         for (let i = 0; i < playerCount; i++) {
             container.innerHTML += `
                 <div class="video-card">
+                    <span class="loading-text">Menunggu...</span>
                     <div class="player-label">Player ${i+1}</div>
                     <div class="video-wrapper">
                         <div id="player${i}"></div>
@@ -189,70 +202,82 @@
         var input = document.getElementById('videoIds').value;
         if(!input) return alert("Masukkan ID Video dulu!");
         
+        // Bersihkan input dan validasi panjang ID
         videoList = input.split(',').map(id => id.trim()).filter(id => id !== "");
+        
+        // Cek Validitas ID (Harus 11 Karakter)
+        let invalidIds = videoList.filter(id => id.length !== 11);
+        if (invalidIds.length > 0) {
+            alert("PERINGATAN: ID berikut sepertinya salah (bukan 11 karakter):\n" + invalidIds.join(", ") + "\n\nVideo mungkin error/hitam.");
+        }
+
         if(videoList.length === 0) return alert("ID Video tidak valid!");
 
-        // Reset array index
+        // Reset
         playerVideoIndexes.fill(0);
-
-        // Hancurkan player lama jika ada (reset)
         players.forEach(p => { if(p && p.destroy) p.destroy(); });
         players = [];
 
-        logStatus(`Memulai ${playerCount} player...`);
+        logStatus(`Memulai ${playerCount} player dengan ${videoList.length} video antrian...`);
 
         for (let i = 0; i < playerCount; i++) {
-            // Beri sedikit delay antara player agar tidak loading serentak macet
+            // Delay bertahap untuk mencegah browser hang
             setTimeout(() => {
                 createPlayer(i);
-            }, i * 300); // Delay 300ms per player
+            }, i * 200); 
         }
     }
 
     function createPlayer(index) {
-        players[index] = new YT.Player(`player${index}`, {
-            height: '100%',
-            width: '100%',
-            videoId: videoList[0], // Mulai dari video pertama
-            playerVars: {
-                'playsinline': 1,
-                'autoplay': 1,
-                'mute': 1, // WAJIB MUTE agar autoplay jalan di banyak frame
-                'controls': 0, // Sembunyikan kontrol agar lebih ringan
-                'rel': 0
-            },
-            events: {
-                'onReady': (event) => {
-                    event.target.mute(); // Paksa mute lagi
-                    event.target.playVideo();
+        // Cek apakah div container masih ada
+        if(!document.getElementById(`player${index}`)) return;
+
+        try {
+            players[index] = new YT.Player(`player${index}`, {
+                height: '100%',
+                width: '100%',
+                videoId: videoList[0],
+                playerVars: {
+                    'playsinline': 1,
+                    'autoplay': 1,
+                    'mute': 1,
+                    'controls': 0,
+                    'rel': 0,
+                    'origin': window.location.origin // Penting untuk keamanan browser
                 },
-                'onStateChange': (event) => onPlayerStateChange(event, index),
-                'onError': (event) => {
-                    logStatus(`Error di Player ${index+1}. Skip video.`);
-                    loadNextVideo(index);
+                events: {
+                    'onReady': (event) => {
+                        event.target.mute();
+                        event.target.playVideo();
+                    },
+                    'onStateChange': (event) => onPlayerStateChange(event, index),
+                    'onError': (event) => {
+                        let errorMsg = "Error";
+                        if(event.data == 2) errorMsg = "ID Salah";
+                        if(event.data == 150) errorMsg = "Dibatasi";
+                        
+                        logStatus(`<span class="error-msg">Player ${index+1}: ${errorMsg} (Skip)</span>`);
+                        loadNextVideo(index);
+                    }
                 }
-            }
-        });
+            });
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     function onPlayerStateChange(event, playerIndex) {
-        // YT.PlayerState.ENDED = 0
-        if (event.data === 0) {
+        if (event.data === 0) { // Ended
             loadNextVideo(playerIndex);
         }
     }
 
     function loadNextVideo(index) {
-        // Increment index video untuk player spesifik ini
         playerVideoIndexes[index]++;
-        
-        // Loop jika sudah habis
         if (playerVideoIndexes[index] >= videoList.length) {
             playerVideoIndexes[index] = 0;
         }
-
-        // Load video baru
-        if (players[index]) {
+        if (players[index] && players[index].loadVideoById) {
             players[index].loadVideoById(videoList[playerVideoIndexes[index]]);
         }
     }
@@ -260,7 +285,9 @@
     function stopAll() {
         players.forEach(p => {
             if(p && typeof p.stopVideo === 'function') p.stopVideo();
+            if(p && typeof p.destroy === 'function') p.destroy();
         });
+        generateHTMLGrid(); // Reset grid ke HTML kosong
         logStatus("Semua player dihentikan.");
     }
 
