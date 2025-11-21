@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Multi-View Booster (12 Player)</title>
+    <style>
+        :root {
+            --primary: #ff0000;
+            --dark: #121212;
+            --light: #f0f0f0;
+            --card-bg: #1e1e1e;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--dark);
+            color: var(--light);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 95%;
+            max-width: 1400px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+        }
+        h2 { margin-top: 0; border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: white; }
+        
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #333;
+            color: white;
+            min-width: 200px;
+        }
+        button {
+            padding: 12px 25px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #cc0000; }
+        button.secondary { background-color: #444; }
+        button.secondary:hover { background-color: #555; }
+
+        /* Grid Layout untuk 10 Player */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .video-card {
+            background: #000;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 ratio */
+            height: 0;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .player-label {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            padding: 2px 6px;
+            font-size: 0.7rem;
+            border-radius: 3px;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .status-panel {
+            background: #252525;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.85rem;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #333;
+        }
+        .log-item { border-bottom: 1px solid #333; padding: 3px 0; color: #aaa; }
+        .highlight { color: #4caf50; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🚀 YouTube Multi-View Booster (12 Player)</h2>
+    
+    <div class="controls">
+        <p style="margin: 0 0 10px 0; color: #ccc; font-size: 0.9rem;">
+            Masukkan ID Video. Semua 12 player akan memutar daftar ini secara looping.
+            <br><small style="color: #e6b800;">⚠ Audio dimatikan otomatis agar browser mengizinkan 12 video diputar sekaligus.</small>
+        </p>
+        <div class="input-group">
+            <input type="text" id="videoIds" placeholder="Contoh: dQw4w9WgXcQ, anotherID..." value="jfKfPfyJRdk, 5qap5aO4i9A">
+            <button onclick="startAllPlayers()">▶ Mulai Semua (12x)</button>
+            <button class="secondary" onclick="stopAll()">⏹ Stop</button>
+        </div>
+    </div>
+
+    <div class="grid-container" id="gridContainer">
+        <!-- Players will be injected here -->
+    </div>
+
+    <div class="status-panel">
+        <strong>Log Aktivitas:</strong>
+        <div id="statusLog">Siap...</div>
+    </div>
+</div>
+
+<script>
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    var players = []; // Array untuk menyimpan 12 object player
+    var videoList = [];
+    var playerCount = 12;
+    
+    // Menyimpan index video saat ini untuk masing-masing player
+    // Agar jika kita punya banyak video, playernya bisa acak (opsional) atau urut.
+    // Disini kita buat urut tapi independen.
+    var playerVideoIndexes = new Array(playerCount).fill(0);
+
+    function onYouTubeIframeAPIReady() {
+        generateHTMLGrid();
+        logStatus("API Siap. Klik 'Mulai Semua' untuk menjalankan 10 player.");
+    }
+
+    // Generate 10 Divs secara otomatis
+    function generateHTMLGrid() {
+        const container = document.getElementById('gridContainer');
+        container.innerHTML = '';
+        for (let i = 0; i < playerCount; i++) {
+            container.innerHTML += `
+                <div class="video-card">
+                    <div class="player-label">Player ${i+1}</div>
+                    <div class="video-wrapper">
+                        <div id="player${i}"></div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    function startAllPlayers() {
+        var input = document.getElementById('videoIds').value;
+        if(!input) return alert("Masukkan ID Video dulu!");
+        
+        videoList = input.split(',').map(id => id.trim()).filter(id => id !== "");
+        if(videoList.length === 0) return alert("ID Video tidak valid!");
+
+        // Reset array index
+        playerVideoIndexes.fill(0);
+
+        // Hancurkan player lama jika ada (reset)
+        players.forEach(p => { if(p && p.destroy) p.destroy(); });
+        players = [];
+
+        logStatus(`Memulai ${playerCount} player...`);
+
+        for (let i = 0; i < playerCount; i++) {
+            // Beri sedikit delay antara player agar tidak loading serentak macet
+            setTimeout(() => {
+                createPlayer(i);
+            }, i * 300); // Delay 300ms per player
+        }
+    }
+
+    function createPlayer(index) {
+        players[index] = new YT.Player(`player${index}`, {
+            height: '100%',
+            width: '100%',
+            videoId: videoList[0], // Mulai dari video pertama
+            playerVars: {
+                'playsinline': 1,
+                'autoplay': 1,
+                'mute': 1, // WAJIB MUTE agar autoplay jalan di banyak frame
+                'controls': 0, // Sembunyikan kontrol agar lebih ringan
+                'rel': 0
+            },
+            events: {
+                'onReady': (event) => {
+                    event.target.mute(); // Paksa mute lagi
+                    event.target.playVideo();
+                },
+                'onStateChange': (event) => onPlayerStateChange(event, index),
+                'onError': (event) => {
+                    logStatus(`Error di Player ${index+1}. Skip video.`);
+                    loadNextVideo(index);
+                }
+            }
+        });
+    }
+
+    function onPlayerStateChange(event, playerIndex) {
+        // YT.PlayerState.ENDED = 0
+        if (event.data === 0) {
+            loadNextVideo(playerIndex);
+        }
+    }
+
+    function loadNextVideo(index) {
+        // Increment index video untuk player spesifik ini
+        playerVideoIndexes[index]++;
+        
+        // Loop jika sudah habis
+        if (playerVideoIndexes[index] >= videoList.length) {
+            playerVideoIndexes[index] = 0;
+        }
+
+        // Load video baru
+        if (players[index]) {
+            players[index].loadVideoById(videoList[playerVideoIndexes[index]]);
+        }
+    }
+
+    function stopAll() {
+        players.forEach(p => {
+            if(p && typeof p.stopVideo === 'function') p.stopVideo();
+        });
+        logStatus("Semua player dihentikan.");
+    }
+
+    function logStatus(msg) {
+        var logDiv = document.getElementById('statusLog');
+        var time = new Date().toLocaleTimeString();
+        logDiv.innerHTML = `<div class="log-item"><span class="highlight">[${time}]</span> ${msg}</div>` + logDiv.innerHTML;
+    }
+</script>
+
+</body>
+</html>
