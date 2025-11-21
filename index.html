@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube 100x Emerald (Turbo Mode)</title>
+    <!-- SECURITY UPDATE: Menyembunyikan sumber trafik agar terdeteksi sebagai 'Direct' -->
+    <meta name="referrer" content="no-referrer">
+    <title>YouTube Emerald Turbo (Stealth Mode)</title>
     <style>
         :root {
             --primary: #2ecc71; /* Warna Emerald Green */
-            --primary-hover: #27ae60; /* Emerald lebih gelap untuk hover */
+            --primary-hover: #27ae60;
             --dark: #121212;
             --light: #f0f0f0;
             --card-bg: #1e1e1e;
@@ -30,7 +32,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.7);
             box-sizing: border-box;
-            border-top: 3px solid var(--primary); /* Aksen atas */
+            border-top: 3px solid var(--primary);
         }
         h2 { margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 15px; color: var(--primary); font-size: 1.5rem; }
         
@@ -47,20 +49,38 @@
             gap: 10px;
             flex-wrap: wrap;
             margin-bottom: 10px;
+            align-items: center;
         }
-        input[type="text"] {
-            flex: 1;
+        
+        /* Style untuk Dropdown & Input */
+        select, input[type="text"], input[type="number"] {
             padding: 12px;
             border-radius: 5px;
             border: 1px solid #444;
             background: #333;
             color: white;
-            min-width: 200px;
             outline: none;
         }
-        input[type="text"]:focus {
-            border-color: var(--primary);
+        
+        select {
+            cursor: pointer;
+            min-width: 120px;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%232ecc71%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+            appearance: none;
+            padding-right: 1.5em;
         }
+
+        input[type="text"] { flex: 2; min-width: 200px; }
+        input[type="text"]:focus, select:focus, input[type="number"]:focus { border-color: var(--primary); }
+
+        .manual-input {
+            display: none; /* Tersembunyi default */
+            width: 100px;
+        }
+        
         button {
             padding: 12px 20px;
             background-color: var(--primary);
@@ -79,7 +99,6 @@
         /* --- GRID LAYOUT --- */
         .grid-container {
             display: grid;
-            /* Grid responsif: minimal 120px per kotak */
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
             gap: 5px;
             margin-bottom: 20px;
@@ -96,7 +115,6 @@
             justify-content: center;
         }
         
-        /* Loading indicator di belakang video */
         .loading-state {
             position: absolute;
             color: #555;
@@ -108,7 +126,7 @@
             position: absolute;
             top: 2px;
             left: 2px;
-            background: rgba(46, 204, 113, 0.9); /* Emerald transparan */
+            background: rgba(46, 204, 113, 0.9);
             color: white;
             font-weight: bold;
             padding: 2px 6px;
@@ -142,28 +160,46 @@
         .log-item { border-bottom: 1px solid #333; padding: 2px 0; color: #aaa; font-size: 0.75rem; }
         .highlight { color: var(--primary); }
 
-        /* Mobile Fix */
         @media (max-width: 768px) {
             body { padding: 5px; }
             .grid-container { grid-template-columns: repeat(3, 1fr); gap: 2px; } 
             .video-wrapper { padding-bottom: 75%; }
             h2 { font-size: 1.2rem; }
+            .input-group { flex-direction: column; align-items: stretch; }
+            select, input, button { width: 100%; }
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🚀 YouTube 100x Turbo (No Delay)</h2>
+    <h2>🚀 YouTube Flexible Turbo (Stealth)</h2>
     
     <div class="controls">
         <p style="margin: 0 0 10px 0; color: #ccc; font-size: 0.9rem;">
-            <strong>Mode Turbo Aktif:</strong> Jeda pemutaran dimatikan untuk kecepatan maksimal. <br>
-            Pastikan koneksi internet kencang!
+            <strong>Tips VPN:</strong> Hidupkan VPN di HP/PC Anda sebelum klik Start.<br>
+            <small style="color: #aaa;">Mode Stealth Aktif: Sumber trafik disamarkan.</small>
         </p>
+        
         <div class="input-group">
-            <input type="text" id="videoIds" placeholder="Contoh: dQw4w9WgXcQ" value="jfKfPfyJRdk">
-            <button onclick="startTurboMode()">⚡ GAS POL (Tanpa Jeda)</button>
+            <!-- Dropdown Pilihan -->
+            <select id="playerCountSelect" onchange="updateGridSettings()">
+                <option value="10">10 Player</option>
+                <option value="20">20 Player</option>
+                <option value="30">30 Player</option>
+                <option value="50">50 Player</option>
+                <option value="100" selected>100 Player (Max)</option>
+                <option value="manual">Manual Input...</option>
+            </select>
+
+            <!-- Input Manual (Hidden by default) -->
+            <input type="number" id="manualCountInput" class="manual-input" placeholder="Jml" min="1" max="200" onchange="updateGridSettings()">
+
+            <input type="text" id="videoIds" placeholder="ID Video: dQw4w9WgXcQ" value="jfKfPfyJRdk">
+        </div>
+        
+        <div class="input-group">
+            <button onclick="startTurboMode()">⚡ GAS POL (Start)</button>
             <button class="secondary" onclick="stopAll()">⏹ Stop & Reset</button>
         </div>
     </div>
@@ -174,27 +210,52 @@
 
     <div class="status-panel">
         <strong>Log Sistem:</strong>
-        <div id="statusLog">Siap. Menunggu perintah...</div>
+        <div id="statusLog">Siap. Pilih jumlah player...</div>
     </div>
 </div>
 
 <script>
     var players = [];
     var videoList = [];
-    var playerCount = 100; // Target 100 Player
-    var playerVideoIndexes = new Array(playerCount).fill(0);
+    var playerCount = 100; // Default awal
+    var playerVideoIndexes = [];
     var loadingInterval;
 
     // Init API
     window.onYouTubeIframeAPIReady = function() {
-        generateHTMLGrid();
-        logStatus("API Siap. Klik Gas Pol.");
+        updateGridSettings(); // Generate grid awal sesuai dropdown (100)
+        logStatus("API Siap.");
     };
 
     var tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // Fungsi Mengatur Grid berdasarkan Pilihan
+    function updateGridSettings() {
+        const selectVal = document.getElementById('playerCountSelect').value;
+        const manualInput = document.getElementById('manualCountInput');
+
+        if (selectVal === 'manual') {
+            manualInput.style.display = 'block';
+            let val = parseInt(manualInput.value);
+            if (!val || val < 1) val = 1; // Default jika kosong
+            playerCount = val;
+        } else {
+            manualInput.style.display = 'none';
+            playerCount = parseInt(selectVal);
+        }
+
+        // Reset array tracking video
+        playerVideoIndexes = new Array(playerCount).fill(0);
+        
+        // Regenerate tampilan grid kosong
+        if (!loadingInterval) { 
+             generateHTMLGrid();
+             logStatus(`Tampilan diset ke ${playerCount} slot.`);
+        }
+    }
 
     function generateHTMLGrid() {
         const container = document.getElementById('gridContainer');
@@ -213,37 +274,31 @@
     }
 
     function startTurboMode() {
+        updateGridSettings();
+        generateHTMLGrid();
+
         var input = document.getElementById('videoIds').value;
         if(!input) return alert("Masukkan ID Video dulu!");
         
         videoList = input.split(',').map(id => id.trim()).filter(id => id !== "");
         if(videoList.length === 0) return alert("ID Kosong!");
 
-        // Validasi
-        let invalidIds = videoList.filter(id => id.length !== 11);
-        if (invalidIds.length > 0) {
-            alert("Peringatan: Ada ID yang salah (Bukan 11 karakter).");
-        }
-
         // Reset Total
-        stopAll(); 
-        playerVideoIndexes.fill(0);
+        stopPlayersInternal();
         
-        logStatus(`🚀 Memulai TURBO MODE (Tanpa Jeda)...`);
+        logStatus(`🚀 Memulai TURBO MODE (${playerCount} Player)...`);
+        logStatus(`🔒 Stealth Mode: Referrer disembunyikan.`);
 
-        // LOGIKA TURBO: Load 5 player sekaligus, interval sangat cepat (100ms)
-        // Ini 8x lebih cepat dari versi sebelumnya.
         let currentIndex = 0;
-        const BATCH_SIZE = 5; // Load 5 sekaligus
+        const BATCH_SIZE = 5; 
         
         loadingInterval = setInterval(() => {
             if (currentIndex >= playerCount) {
                 clearInterval(loadingInterval);
-                logStatus("✅ SELESAI! Semua 100 Player Aktif.");
+                logStatus(`✅ SELESAI! ${playerCount} Player Aktif.`);
                 return;
             }
 
-            // Load batch
             for(let k = 0; k < BATCH_SIZE; k++) {
                 if (currentIndex + k < playerCount) {
                     createPlayer(currentIndex + k);
@@ -252,12 +307,11 @@
             
             currentIndex += BATCH_SIZE;
             
-            // Update log minimalis
-            if (currentIndex % 20 === 0) {
-                logStatus(`Turbo Loading... ${Math.min(currentIndex, playerCount)} / ${playerCount}`);
+            if (currentIndex % 10 === 0 || currentIndex === playerCount) {
+                logStatus(`Loading... ${Math.min(currentIndex, playerCount)} / ${playerCount}`);
             }
 
-        }, 100); // Jeda hanya 0.1 detik antar batch (Hampir instan)
+        }, 100);
     }
 
     function createPlayer(index) {
@@ -270,12 +324,13 @@
                 playerVars: {
                     'playsinline': 1, 
                     'autoplay': 1, 
-                    'mute': 1, // Wajib Mute
+                    'mute': 1, 
                     'controls': 0, 
                     'rel': 0, 
                     'disablekb': 1,
                     'fs': 0, 
-                    'origin': window.location.origin
+                    // Origin penting untuk API, tapi meta referrer menangani privasi
+                    'origin': window.location.origin 
                 },
                 events: {
                     'onReady': (e) => { 
@@ -290,7 +345,6 @@
     }
 
     function onPlayerStateChange(event, playerIndex) {
-        // 0 = Video Selesai (Ended)
         if (event.data === 0) {
             loadNextVideo(playerIndex);
         }
@@ -299,7 +353,7 @@
     function loadNextVideo(index) {
         playerVideoIndexes[index]++;
         if (playerVideoIndexes[index] >= videoList.length) {
-            playerVideoIndexes[index] = 0; // Loop dari awal
+            playerVideoIndexes[index] = 0; 
         }
         if (players[index] && players[index].loadVideoById) {
             players[index].loadVideoById(videoList[playerVideoIndexes[index]]);
@@ -307,15 +361,17 @@
     }
 
     function stopAll() {
+        stopPlayersInternal();
+        generateHTMLGrid(); // Bersihkan visual
+        logStatus("Semua proses dihentikan.");
+    }
+
+    function stopPlayersInternal() {
         if (loadingInterval) clearInterval(loadingInterval);
-        
         players.forEach(p => { 
             if(p && typeof p.destroy === 'function') p.destroy(); 
         });
         players = [];
-        
-        generateHTMLGrid();
-        logStatus("Semua proses dihentikan.");
     }
 
     function logStatus(msg) {
